@@ -1,0 +1,53 @@
+{
+  "description": "Skill-directory write guard/snapshot, self-reflect Stop hook, and once-per-session Codex review gate.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-guard.py\"",
+            "name": "skill-guard",
+            "timeout": 10,
+            "statusMessage": "Scanning skill write..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-snapshot.py\"",
+            "name": "skill-snapshot",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/self-reflect-stop.py\"",
+            "name": "self-reflect",
+            "timeout": 15,
+            "statusMessage": "Reflecting on session..."
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-review-gate-stop.py\"",
+            "name": "codex-review-gate",
+            "timeout": 900,
+            "statusMessage": "Codex reviewing session changes..."
+          }
+        ]
+      }
+    ]
+  }
+}

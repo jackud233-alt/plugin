@@ -1,0 +1,8 @@
+{
+  "name": "vla-research-toolkit",
+  "version": "1.0.0",
+  "description": "Personal research-workflow toolkit: 28 skills (deep research, arXiv/paper reading, surveys, interview prep, docx/xlsx/ppt generation, dev workflow skills), 7 agents (peer-reviewer, literature-reviewer, review-agent, etc.), a skill-directory write guard + version snapshotter, a self-reflect Stop hook, a once-per-session Codex review gate, and the Context7 docs MCP server. Migrated from a Qoder CLI backup plus Codex CLI's review-agent skill.",
+  "author": {
+    "name": "walterdu"
+  }
+}

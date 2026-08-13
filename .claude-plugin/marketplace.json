@@ -1,0 +1,21 @@
+{
+  "name": "vla-plugin",
+  "owner": {
+    "name": "walterdu"
+  },
+  "metadata": {
+    "description": "Personal Claude Code skills/agents/hooks/MCP bundle, for migrating between machines (e.g. into DSW).",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "vla-research-toolkit",
+      "description": "28 skills + 7 agents + skill-guard/snapshot/self-reflect/codex-review-gate hooks + Context7 MCP.",
+      "version": "1.0.0",
+      "author": {
+        "name": "walterdu"
+      },
+      "source": "./plugins/vla-research-toolkit"
+    }
+  ]
+}
