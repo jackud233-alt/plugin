@@ -23,11 +23,25 @@ Two changes from the original:
    habit/emotion reflection and would be far too heavy/interruptive for a
    coding assistant's end-of-session hook.
 
+3. Isolated-review fallback: codex-review-gate-stop.py gets its isolation
+   from spawning a genuinely separate process (Codex, a different model,
+   with no access to this conversation) — that's what makes its second
+   opinion valuable. This hook has no such isolation on its own: a
+   Stop-hook `block` just re-wakes the SAME Claude in the SAME context, so
+   asking it to grade its own code inline is self-review, not independent
+   review. When the Codex runtime isn't found (plugin not installed, or a
+   machine like a fresh DSW box that hasn't been set up yet) AND there are
+   uncommitted git changes, this hook asks the agent to dispatch the
+   `review-agent` subagent via the Task/Agent tool instead — a fresh,
+   isolated context window that only sees the diff, not this conversation's
+   rationale. That's a real (if lower-powered) substitute for Codex's
+   isolation, rather than silently doing nothing.
+
 Re-wakes the agent ONCE per session-stop with a unified review prompt.
 Includes recursion guard via stop_hook_active flag, per-session counter,
 and minimum-transcript-length check (all unchanged from the original).
 """
-import json, os, sys, time
+import glob, json, os, subprocess, sys, time
 
 HOME = os.path.expanduser("~")
 STATE = os.path.join(HOME, ".claude", "hooks", ".hook-state")
@@ -90,6 +104,27 @@ def bump_project_fire_count(cwd: str) -> int:
     return n
 
 
+def find_codex_companion() -> "str | None":
+    """Same lookup as codex-review-gate-stop.py: is the openai-codex plugin's
+    runtime script present? Presence is just a proxy for "Codex could
+    plausibly run here" — this hook doesn't check auth, that's Codex's own
+    hook's job when it actually tries to invoke it."""
+    pattern = os.path.join(HOME, ".claude", "plugins", "cache", "openai-codex", "codex", "*", "scripts", "codex-companion.mjs")
+    candidates = sorted(glob.glob(pattern))
+    return candidates[-1] if candidates else None
+
+
+def has_uncommitted_changes(cwd: str) -> bool:
+    try:
+        r = subprocess.run(
+            ["git", "-C", cwd, "status", "--porcelain", "--untracked-files=all"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except Exception:
+        return False
+    return r.returncode == 0 and bool(r.stdout.strip())
+
+
 def main():
     try:
         data = json.loads(sys.stdin.read())
@@ -115,9 +150,34 @@ give the user a real choice instead of silently re-proposing it again:
 Only fall through to a normal fresh proposal if nothing recurring is found.
 """
 
+    need_isolated_review = not find_codex_companion() and has_uncommitted_changes(cwd)
+    isolated_review_note = ""
+    isolated_review_section = ""
+    if need_isolated_review:
+        isolated_review_note = """
+⚠️ No Codex runtime found on this machine (openai-codex plugin isn't
+installed, or its script wasn't found) — the isolated Codex review gate has
+nothing to run. There are uncommitted git changes from this session, so get
+a substitute isolated opinion instead: dispatch the `review-agent` subagent
+via the Task/Agent tool (NOT an inline review in this context — the whole
+point is a fresh context window that hasn't seen this conversation's
+rationale). Report its findings in section 3 below.
+"""
+        isolated_review_section = """
+
+## 3. Isolated Code Review (Codex unavailable — Claude-only fallback)
+Dispatch the `review-agent` subagent (Task/Agent tool) to review this
+session's uncommitted git changes in its own isolated context. Report its
+findings verbatim, ordered by severity, or write exactly "No findings." if
+it found nothing. Do not review the diff yourself inline instead of
+dispatching — an inline review from this same context is self-review, not
+independent review, and defeats the point."""
+
+    sections_count = "three" if need_isolated_review else "two"
+
     reason = f"""[self-reflect] Before stopping, do ONE combined self-review pass and reply with a structured proposal. Do NOT write any files yet — only propose, then wait for user confirmation.
-{rumination_note}
-Output exactly two sections:
+{rumination_note}{isolated_review_note}
+Output exactly {sections_count} sections:
 
 ## 1. Skill Evolution
 Scan this conversation for non-trivial, reusable knowledge worth saving as a Skill in ~/.claude/skills/. Examples: a successful workflow, an API contract, a domain heuristic, a debugging recipe.
@@ -131,12 +191,12 @@ Follow your own memory-writing convention for this project (per-fact frontmatter
 - **Contradiction check**: if a candidate observation conflicts with an existing memory entry (a stated preference reversed, a path that moved, a decision superseded), do not just append a second, conflicting entry — call out the conflict explicitly and propose whether to update/replace the old entry or record it as a superseding note.
 - Scan for STABLE preferences / recurring context worth persisting across sessions (tooling, conventions, style, domain). Propose 0-3 bullets in this exact format:
   - [{today}] <short observation, ≤ 25 words>
-- If nothing qualifies, write exactly: "No memory updates."
+- If nothing qualifies, write exactly: "No memory updates."{isolated_review_section}
 
 Hard constraints:
 - Never include secrets, API keys, file contents, or one-off transient state.
 - Never write files in this turn — only propose. Wait for explicit user confirmation ("yes" / "save" / "go ahead") before any Write/Edit.
-- If neither section has anything to save, reply on one line: "Nothing to save. No memory updates." and stop.
+- If neither/none of the sections has anything to save or report, reply on one line summarizing that and stop.
 """
     print(json.dumps({"decision": "block", "reason": reason}))
     sys.exit(0)
