@@ -1,6 +1,6 @@
 ---
 name: ppt-generation
-description: "Generate professional PowerPoint presentations (PPT/PPTX) with visually rich AI-generated slides in business, academic, minimal, Apple Keynote, or creative styles. Use when the user asks to create slides, decks, kickoff/pitch presentations, course slides, conference talks, or says in Chinese: 做PPT、生成PPT、做一份幻灯片、汇报材料、答辩PPT、路演PPT、宣讲材料、做一份学术报告幻灯片。"
+description: "Generate professional PowerPoint presentations (PPT/PPTX) with visually rich AI-generated slides in business, academic, minimal, Apple Keynote, or creative styles. Use when the user asks to create slides, decks, kickoff/pitch presentations, course slides, conference talks, or says in Chinese: 做PPT、生成PPT、做一份幻灯片、汇报材料、答辩PPT、路演PPT、宣讲材料、做一份学术报告幻灯片。Each slide is a single AI-generated image (text is not editable); for HTML-native decks or editable PPTX export, use huashu-design instead."
 ---
 
 # PPT Generation Skill

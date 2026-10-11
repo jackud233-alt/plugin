@@ -10,7 +10,10 @@ Contains one plugin, `vla-research-toolkit`:
 - **28 skills** — deep-research/arXiv/paper-reading/survey/interview-prep
   skills (from a Qoder CLI migration), dev-workflow skills (TDD, systematic
   debugging, worktrees, code review, ...), `review-agent` (ported from Codex
-  CLI's built-in review skill), and `auto-mode-classifier-retry`.
+  CLI's built-in review skill), `auto-mode-classifier-retry`, and
+  `huashu-design` (HTML-native prototypes / decks / motion design / infographics,
+  imported from [alchaincyf/huashu-design](https://github.com/alchaincyf/huashu-design),
+  MIT — see below).
 - **7 agents** — `grant-writer`, `literature-reviewer`, `paper-writer`,
   `peer-reviewer`, `referee-responder`, `review-agent`, `scientific-critic`.
 - **4 hooks**:
@@ -33,6 +36,30 @@ under `~/.claude/projects/<project>/memory/` and doesn't transfer meaningfully
 to a different project path) and the `openai/codex-plugin-cc` plugin itself
 (that's OpenAI's own plugin — install it fresh via the steps below rather
 than re-bundling someone else's plugin).
+
+## huashu-design (since 1.1.0)
+
+`skills/huashu-design/` is the upstream
+[alchaincyf/huashu-design](https://github.com/alchaincyf/huashu-design) skill
+(MIT, copyright alchaincyf) at a pinned commit, with a few path/self-update
+tweaks for plugin distribution. The exact commit and every local change are listed in
+`plugins/vla-research-toolkit/skills/huashu-design/UPSTREAM.md`. It adds about 33 MB,
+mostly the BGM/SFX audio in `assets/`.
+
+- Overlaps with `ppt-generation`. Decks where every slide is an AI-generated image
+  go to `ppt-generation`. HTML decks and editable PPTX go to `huashu-design`. Both
+  skill descriptions say so.
+- Export scripts need `playwright` (and `pptxgenjs` / `pdf-lib` / `sharp` / `ffmpeg`
+  depending on the feature). Install them in your project or globally, not inside
+  the plugin directory.
+- `scripts/cloud/*` (Doubao TTS, Volcengine Ark video review) are optional, need your
+  own keys via environment variables, and send data to Volcengine. See the skill's
+  `SECURITY.md`.
+- **Opt-in render gate.** Upstream ships `scripts/design-gate-hook.sh`, a PreToolUse(Bash)
+  hook that blocks rendering a ≥45 s composition until the project has a
+  `direction-approved.md`. It is **not** registered in this plugin's `hooks.json`.
+  To enable it, add a `PreToolUse` / matcher `Bash` command hook in your own
+  `settings.json` pointing at that script inside the installed plugin directory.
 
 ## Install on a new machine (e.g. DSW)
 
